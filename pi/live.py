@@ -11,6 +11,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import cv2
+import joblib
 import numpy as np
 
 
@@ -22,7 +23,7 @@ def normalize_path(p):
 
 def get_stream_url(ytdlp, url):
     try:
-        cmd = [ytdlp, "-f", "best[height<=480]/worst", "-g", url]
+        cmd = [ytdlp, "-f", "best[height<=1080]/best", "-g", url]
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if p.returncode != 0:
             out = (p.stdout or "") + (p.stderr or "")
@@ -39,7 +40,7 @@ def get_stream_url(ytdlp, url):
 def grab_frame(ffmpeg, url):
     tmp = os.path.join(tempfile.gettempdir(), f"kz_{os.getpid()}_{int(time.time()*1000)}.jpg")
     try:
-        cmd = [ffmpeg, "-loglevel", "error", "-y", "-i", url, "-frames:v", "1", "-vf", "scale=852:480", tmp]
+        cmd = [ffmpeg, "-loglevel", "error", "-y", "-i", url, "-frames:v", "1", tmp]
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if p.returncode != 0 or not os.path.exists(tmp) or os.path.getsize(tmp) == 0:
             return None
@@ -54,25 +55,34 @@ def grab_frame(ffmpeg, url):
                 pass
 
 
-def recognize_face(frame, detector, recognizer, names, centroids):
-    # returns (letters of everyone in the cam, best sim, face of the main person)
+def recognize_face(frame, detector, recognizer, model, min_w=40, min_p=0.8):
+    # returns (letters of everyone in the cam, best probability, face of the main person)
+    h, w = frame.shape[:2]
+    detector.setInputSize((w, h))
     _, faces = detector.detect(frame)
     seen = []
     if faces is not None:
         for face in faces:
-            feat = recognizer.feature(recognizer.alignCrop(frame, face))
-            sims = [float(recognizer.match(feat, c, cv2.FaceRecognizerSF_FR_COSINE)) for c in centroids]
-            j = int(np.argmax(sims))
-            if sims[j] >= 0.45:
-                seen.append((float(face[2]), sims[j], str(names[j]), float(face[0] + face[2] / 2), float(face[1] + face[3] / 2), face))
+            if face[2] < min_w * w / 1920:
+                continue
+            feat = recognizer.feature(recognizer.alignCrop(frame, face)).flatten().astype(np.float32)
+            p = model.predict_proba((feat / np.linalg.norm(feat)).reshape(1, -1))[0]
+            j = int(np.argmax(p))
+            if p[j] >= min_p and str(model.classes_[j]) != "I":
+                seen.append((float(face[2]), float(p[j]), str(model.classes_[j]), float(face[0] + face[2] / 2), float(face[1] + face[3] / 2), face))
     if not seen:
         return "-", -1.0, None
     main = max(seen, key=lambda x: x[0])
     letters = {main[2]}
-    for x in seen:  # 2nd person: similar size, good match, clearly beside the main face
-        if x[0] >= 0.6 * main[0] and x[1] >= 0.5 and ((x[3] - main[3]) ** 2 + (x[4] - main[4]) ** 2) ** 0.5 >= 0.9 * main[0]:
+    for x in seen:  # 2nd person: similar size and clearly beside the main face
+        if x[0] >= 0.6 * main[0] and ((x[3] - main[3]) ** 2 + (x[4] - main[4]) ** 2) ** 0.5 >= 0.9 * main[0]:
             letters.add(x[2])
     return "".join(sorted(letters)), main[1], main[5]
+
+
+def _corner(frame):
+    h, w = frame.shape[:2]
+    return cv2.resize(frame[0:h * 160 // 480, w * 666 // 852:w], (186, 160))
 
 
 def save_proof_and_sample(repo, frame, person, best_sim, best_face):
@@ -89,9 +99,9 @@ def save_proof_and_sample(repo, frame, person, best_sim, best_face):
             h, w = frame.shape[:2]
             x1, y1 = max(0, int(round(cx - nw / 2.0))), max(0, int(round(cy - nh / 2.0)))
             x2, y2 = min(w, int(round(cx + nw / 2.0))), min(h, int(round(cy + nh / 2.0)))
-            shot = cv2.resize(frame[y1:y2, x1:x2], (186, 160)) if (x2 > x1 and y2 > y1) else frame[0:160, 666:852]
+            shot = cv2.resize(frame[y1:y2, x1:x2], (186, 160)) if (x2 > x1 and y2 > y1) else _corner(frame)
         else:
-            shot = frame[0:160, 666:852]
+            shot = _corner(frame)
         os.makedirs(proof_dir, exist_ok=True)
         cv2.imwrite(proof_path, shot, [int(cv2.IMWRITE_JPEG_QUALITY), 72])
         saved_photo = True
@@ -109,7 +119,7 @@ def save_proof_and_sample(repo, frame, person, best_sim, best_face):
     return saved_photo
 
 
-def measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, names, centroids):
+def measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, model):
     state, url = get_stream_url(ytdlp, stream_url)
     if state == "offline":
         return "offline"
@@ -119,7 +129,7 @@ def measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, names, centro
     if frame is None:
         return "error"
     try:
-        person, best_sim, best_face = recognize_face(frame, detector, recognizer, names, centroids)
+        person, best_sim, best_face = recognize_face(frame, detector, recognizer, model)
         save_proof_and_sample(repo, frame, person, best_sim, best_face)
         return "ok"
     finally:
@@ -164,14 +174,13 @@ def main():
     script_dir = Path(__file__).resolve().parent
     yunet_path = str(script_dir / "models" / "yunet.onnx")
     sface_path = str(script_dir / "models" / "sface.onnx")
-    cent_data = np.load(str(script_dir / "centroids.npz"))
-    names, centroids = cent_data["names"], cent_data["cent"]
+    model = joblib.load(str(script_dir / "classifier.joblib"))
 
-    detector = cv2.FaceDetectorYN.create(yunet_path, "", (852, 480), score_threshold=0.85)
+    detector = cv2.FaceDetectorYN.create(yunet_path, "", (852, 480), score_threshold=0.7)
     recognizer = cv2.FaceRecognizerSF.create(sface_path, "")
 
     if "--once" in sys.argv:
-        state = measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, names, centroids)
+        state = measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, model)
         sys.exit(0 if state in ("ok", "offline") else 1)
 
     last_push = 0.0
@@ -181,7 +190,7 @@ def main():
             if last_push == 0.0 or (now - last_push >= push_every):
                 git_sync(repo)
                 last_push = time.time()
-            state = measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, names, centroids)
+            state = measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, model)
             if state in ("ok", "offline") and kuma_url:
                 ping_kuma(kuma_url)
             if time.time() - last_push >= push_every:

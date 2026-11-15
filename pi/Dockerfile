@@ -7,13 +7,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --default-timeout=300 --retries 10 opencv-python-headless numpy yt-dlp
+RUN pip install --no-cache-dir --default-timeout=300 --retries 10 opencv-python-headless numpy yt-dlp scikit-learn==1.9.1
 
 WORKDIR /app
 
 COPY pi/live.py /app/pi/
 COPY pi/models /app/pi/models
-COPY pi/centroids.npz /app/pi/
+COPY pi/classifier.joblib /app/pi/
 
 ENV REPO=/repo
 
