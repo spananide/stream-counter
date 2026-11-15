@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: pi/Dockerfile
     restart: unless-stopped
-    mem_limit: 400m
+    mem_limit: 600m
     volumes:
       - ..:/repo
       - ./ssh:/root/.ssh:ro
