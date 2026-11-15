@@ -94,8 +94,8 @@ function render(){
  const {days,tot}=build(),all=Object.keys(days).sort();
  const hrs=k=>tot[k]*5/60,total=tot.n*5/60;
  const last=S[S.length-1],age=last?(Date.now()/1000-last.t)/60:1e9;
- document.getElementById("live").className="live"+(age<20?" on":"");
- document.getElementById("liveT").textContent=age<20?`LIVE · zuletzt gemessen vor ${Math.max(0,Math.round(age))} Min`:`Keine aktuelle Messung (zuletzt vor ${age>1440?Math.round(age/1440)+" Tagen":Math.round(age/60)+" Std"}). Stream offline oder Pause.`;
+ document.getElementById("live").className="live"+(age<30?" on":"");
+ document.getElementById("liveT").textContent=age<30?`LIVE · zuletzt gemessen vor ${Math.max(0,Math.round(age))} Min`:`Keine aktuelle Messung (zuletzt vor ${age>1440?Math.round(age/1440)+" Tagen":Math.round(age/60)+" Std"}). Stream offline oder Pause.`;
  document.getElementById("sub").textContent=`${fmt(total)} Stunden Stream ausgewertet, seit ${all[0]?all[0].split("-").reverse().join("."):""}. Gezählt wird, wer in der Facecam sitzt. Sitzen zwei zusammen, zählen beide.`;
  const ranked=P.slice().sort((a,b)=>tot[b[1]]-tot[a[1]]);
  document.getElementById("rank").innerHTML=ranked.map((p,i)=>{const h=hrs(p[1]),pct=total?h/total*100:0;
