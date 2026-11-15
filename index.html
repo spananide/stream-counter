@@ -66,7 +66,7 @@ h2{font-size:22px;font-weight:800}
 <section>
 <h2>Schichtplan, Stunde für Stunde</h2>
 <div class="legend">
-<span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
+<span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw" style="background:linear-gradient(90deg,var(--n) 50%,var(--d) 50%)"></i>zwei zusammen</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
 </div>
 <div class="proof"><img class="shot" id="shot" alt="Beweisfoto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><button type="button" id="rnd">Zufälliges Foto</button></div></div>
 <div class="scroll"><div class="grid" id="grid"></div></div>
@@ -85,18 +85,18 @@ const bf=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric
 function parts(t){const o={};for(const p of bf.formatToParts(new Date(t*1000)))o[p.type]=p.value;return {day:`${o.year}-${o.month}-${o.day}`,h:+o.hour,m:+o.minute}}
 let S=[],sel=null;
 function build(){
- const days={},tot={N:0,V:0,D:0,"-":0};
+ const days={},tot={N:0,V:0,D:0,"-":0,n:0};
  for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,img:null})));
-  const c=d[q.h];c[s.p]++;c.n++;tot[s.p]++;if(s.img)c.img=s;}
+  const c=d[q.h],L=s.p==="-"?[]:s.p.split("");c.n++;tot.n++;if(!L.length){c["-"]++;tot["-"]++}for(const l of L){c[l]++;tot[l]++}if(s.img)c.img=s;}
  return {days,tot};
 }
 function render(){
  const {days,tot}=build(),all=Object.keys(days).sort();
- const hrs=k=>tot[k]*5/60,total=(tot.N+tot.V+tot.D+tot["-"])*5/60;
+ const hrs=k=>tot[k]*5/60,total=tot.n*5/60;
  const last=S[S.length-1],age=last?(Date.now()/1000-last.t)/60:1e9;
  document.getElementById("live").className="live"+(age<20?" on":"");
  document.getElementById("liveT").textContent=age<20?`LIVE · zuletzt gemessen vor ${Math.max(0,Math.round(age))} Min`:`Keine aktuelle Messung (zuletzt vor ${age>1440?Math.round(age/1440)+" Tagen":Math.round(age/60)+" Std"}). Stream offline oder Pause.`;
- document.getElementById("sub").textContent=`${fmt(total)} Stunden Stream ausgewertet, seit ${all[0]?all[0].split("-").reverse().join("."):""}. Gezählt wird, wer in der Facecam sitzt.`;
+ document.getElementById("sub").textContent=`${fmt(total)} Stunden Stream ausgewertet, seit ${all[0]?all[0].split("-").reverse().join("."):""}. Gezählt wird, wer in der Facecam sitzt. Sitzen zwei zusammen, zählen beide.`;
  const ranked=P.slice().sort((a,b)=>tot[b[1]]-tot[a[1]]);
  document.getElementById("rank").innerHTML=ranked.map((p,i)=>{const h=hrs(p[1]),pct=total?h/total*100:0;
   return `<div class="row"><span class="no">${i+1}</span><span class="name">${p[0]}</span><span class="hrs">${fmt(h)}<small> h</small></span><div class="bar"><i style="width:${pct}%;background:var(${p[2]})"></i></div><span class="meta">${fmt(pct)} % der Zeit · ${fmt(h/24)} volle Tage</span></div>`}).join("");
@@ -107,15 +107,18 @@ function render(){
    const day=`${d.getFullYear()}-${f2(d.getMonth()+1)}-${f2(d.getDate())}`,row=days[day];
    g+=`<span class="d">${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}.</span>`;
    for(let h=0;h<24;h++){const c=row&&row[h];let k="X",t="keine Messung";
-    if(c&&c.n){const top=["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a);k=top==="-"?"A":top;t=WHO[top]||"niemand in der Cam"}
-    g+=`<span class="c k-${k}${c&&c.img?" ph":""}" data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
+    let st="";
+    if(c&&c.n){let pr=["N","V","D"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a)];
+     t=pr.map(l=>WHO[l]||"niemand in der Cam").join(" + ");
+     if(pr.length==1)k=pr[0]==="-"?"A":pr[0];else{k="M";const col={N:"--n",V:"--v",D:"--d"},w=100/pr.length;st=` style="background:linear-gradient(90deg,${pr.map((l,i)=>`var(${col[l]}) ${i*w}% ${(i+1)*w}%`).join(",")})"`}}
+    g+=`<span class="c k-${k}${c&&c.img?" ph":""}"${st} data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
  document.getElementById("grid").innerHTML=g;window._days=days;
  if(sel)show(sel[0],sel[1]);else rand();
 }
 function show(day,h){const c=window._days[day]&&window._days[day][h];if(!c||!c.img)return;sel=[day,h];
  const s=c.img,d=new Date(day+"T12:00:00");
  document.getElementById("shot").src=`proof/${day}/${f2(h)}.jpg`;
- document.getElementById("capT").textContent=WHO[s.p]||"Niemand in der Cam";
+ document.getElementById("capT").textContent=s.p==="-"?"Niemand in der Cam":s.p.split("").map(l=>WHO[l]).join(" + ");
  document.getElementById("capS").textContent=`${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}., ${f2(h)}:${f2(s.q.m)} Uhr`;
  document.querySelectorAll(".c.sel").forEach(e=>e.classList.remove("sel"));
  const el=document.querySelector(`.c[data-day="${day}"][data-h="${h}"]`);if(el)el.classList.add("sel");}
@@ -123,7 +126,7 @@ function rand(){const a=[...document.querySelectorAll(".c.ph")];if(!a.length)ret
 document.getElementById("grid").addEventListener("click",e=>{const t=e.target.closest(".c");if(t)show(t.dataset.day,+t.dataset.h)});
 document.getElementById("rnd").addEventListener("click",()=>{sel=null;rand()});
 document.getElementById("note").innerHTML=[
-"Alle 5 Minuten wird ein Bild vom Stream genommen, im ganzen Bild nach Gesichtern gesucht und per Gesichtserkennung einer Person zugeordnet. Jedes Bild zählt 5 Minuten. Die Zeit bis zum 15.11. wurde aus den Mitschnitten (VODs) berechnet, danach misst ein kleiner Server live. Zwei Stichproben von je 30 Bildern ergaben 29 und 30 richtige Treffer. Rechne also mit kleinen Abweichungen.",
+"Alle 5 Minuten wird ein Bild vom Stream genommen, im ganzen Bild nach Gesichtern gesucht und per Gesichtserkennung einer Person zugeordnet. Jedes Bild zählt 5 Minuten, für jede Person, die in der Cam sitzt. Deshalb ergeben die Stunden der drei zusammen mehr als die Streamzeit. Die Zeit bis zum 15.11. wurde aus den Mitschnitten (VODs) berechnet, danach misst ein kleiner Server live. Zwei Stichproben von je 30 Bildern ergaben 29 und 30 richtige Treffer. Rechne also mit kleinen Abweichungen.",
 "Es fehlen etwa 46 Stunden (24.10. mittags bis 26.10. früh), weil es dafür auf Twitch keinen Mitschnitt mehr gibt. Sie sind im Plan schraffiert und nicht in den Stunden enthalten.",
 "Tippe auf ein Kästchen mit Rahmen, um ein Foto aus dieser Stunde zu sehen. Ein Kästchen zeigt, wer in dieser Stunde am häufigsten in der Cam saß. Zeiten in Berlin."].map(t=>`<p>${t}</p>`).join("");
 async function load(){try{const r=await fetch("samples.jsonl?"+Math.floor(Date.now()/60000),{cache:"no-store"});

@@ -55,16 +55,24 @@ def grab_frame(ffmpeg, url):
 
 
 def recognize_face(frame, detector, recognizer, names, centroids):
+    # returns (letters of everyone in the cam, best sim, face of the main person)
     _, faces = detector.detect(frame)
-    best_sim, best_name, best_face = -1.0, "-", None
+    seen = []
     if faces is not None:
         for face in faces:
             feat = recognizer.feature(recognizer.alignCrop(frame, face))
-            for name, cent in zip(names, centroids):
-                sim = float(recognizer.match(feat, cent, cv2.FaceRecognizerSF_FR_COSINE))
-                if sim > best_sim:
-                    best_sim, best_name, best_face = sim, str(name), face
-    return (best_name if best_sim >= 0.45 else "-"), best_sim, best_face
+            sims = [float(recognizer.match(feat, c, cv2.FaceRecognizerSF_FR_COSINE)) for c in centroids]
+            j = int(np.argmax(sims))
+            if sims[j] >= 0.45:
+                seen.append((float(face[2]), sims[j], str(names[j]), float(face[0] + face[2] / 2), float(face[1] + face[3] / 2), face))
+    if not seen:
+        return "-", -1.0, None
+    main = max(seen, key=lambda x: x[0])
+    letters = {main[2]}
+    for x in seen:  # 2nd person: similar size, good match, clearly beside the main face
+        if x[0] >= 0.6 * main[0] and x[1] >= 0.5 and ((x[3] - main[3]) ** 2 + (x[4] - main[4]) ** 2) ** 0.5 >= 0.9 * main[0]:
+            letters.add(x[2])
+    return "".join(sorted(letters)), main[1], main[5]
 
 
 def save_proof_and_sample(repo, frame, person, best_sim, best_face):
