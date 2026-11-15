@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kamerazeit</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23f2a93b'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%230e1116'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: ranking on top, then a day-by-hour shift grid that shows who sat on cam; mono numbers, grotesque headings */
+:root{--bg:#f4f5f7;--panel:#fff;--fg:#14171c;--mute:#5d6672;--line:#d9dde3;
+--n:#d98a0f;--v:#0c93b3;--d:#d8456a;--away:#c3c9d2;--nodata:#eceef1;--nodata-line:#cfd4db;
+--display:"Bricolage Grotesque",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--panel:#161a21;--fg:#eef0f3;--mute:#9099a6;--line:#262c36;--n:#f2a93b;--v:#3fb8d6;--d:#ef6f8b;--away:#3a424e;--nodata:#12151b;--nodata-line:#262c36;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1116;--panel:#161a21;--fg:#eef0f3;--mute:#9099a6;--line:#262c36;--n:#f2a93b;--v:#3fb8d6;--d:#ef6f8b;--away:#3a424e;--nodata:#12151b;--nodata-line:#262c36;color-scheme:dark}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0}.live{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin:0 0 14px}.dot{width:9px;height:9px;border-radius:50%;background:var(--away)}.on .dot{background:#2fbf71;animation:p 2s infinite}@keyframes p{0%{box-shadow:0 0 0 0 #2fbf7188}70%{box-shadow:0 0 0 8px transparent}}@media (prefers-reduced-motion:reduce){.on .dot{animation:none}}.grid .c.ph{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--mono);padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main>*{min-width:0}
+main{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:48px}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.02em}
+h1{font-size:clamp(40px,9vw,76px);font-weight:800;line-height:.95}
+h2{font-size:22px;font-weight:800}
+.sub{color:var(--mute);margin:12px 0 0;max-width:60ch}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:0 0 14px}
+.rank{display:flex;flex-direction:column;gap:14px;margin-top:20px}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:grid;grid-template-columns:32px 1fr auto;gap:4px 14px;align-items:baseline}
+.row .no{font:800 28px/1 var(--display);color:var(--mute)}
+.row .name{font:800 26px/1.1 var(--display)}
+.row .hrs{font:500 26px/1 var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.row .hrs small{font-size:13px;color:var(--mute)}
+.bar{grid-column:1/-1;height:10px;background:var(--nodata);border-radius:2px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;border-radius:2px}
+.meta{grid-column:1/-1;color:var(--mute);font-size:13px}
+.away{color:var(--mute);font-size:13px;margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--mute);margin:12px 0 16px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:14px;height:14px;border-radius:2px;display:inline-block}
+.scroll{overflow-x:auto}
+.grid{display:grid;grid-template-columns:62px repeat(24,minmax(11px,1fr));gap:2px;min-width:360px}
+.grid .h{font-size:11px;color:var(--mute);text-align:left;height:16px;line-height:16px}
+.grid .d{font-size:12px;color:var(--mute);line-height:16px;white-space:nowrap}
+.grid .c{height:16px;border-radius:2px}
+.k-N{background:var(--n)}.k-V{background:var(--v)}.k-D{background:var(--d)}.k-A{background:var(--away)}
+.k-X{background:repeating-linear-gradient(135deg,var(--nodata) 0 3px,var(--nodata-line) 3px 4px)}
+.proof{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:16px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:12px}
+.shot{flex:none;width:186px;height:160px;border-radius:3px;background:var(--nodata);object-fit:cover;display:block}
+.cap{display:flex;flex-direction:column;gap:8px;min-width:0;font-size:13px;color:var(--mute)}
+.cap b{font:800 20px/1.1 var(--display);color:var(--fg)}
+.cap button{align-self:flex-start;font:inherit;font-size:13px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 12px;cursor:pointer}
+.cap button:hover,.cap button:focus-visible{border-color:var(--fg);outline:none}
+.grid .c{cursor:pointer}.grid .c.sel{outline:2px solid var(--fg);outline-offset:1px}
+.note{color:var(--mute);font-size:14px;max-width:68ch;display:flex;flex-direction:column;gap:10px}
+.note p{margin:0}
+@media (max-width:480px){.proof{gap:12px}.shot{width:140px;height:120px}.row{grid-template-columns:26px 1fr}.row .hrs{grid-column:2;text-align:left}}
+</style>
+</head><body>
+<main>
+<header>
+<p class="eyebrow">Craft Attack 14 · 24/7 auf nooreax</p>
+<h1>Wer saß am<br>meisten vor<br>der Kamera?</h1>
+<p class="live" id="live"><i class="dot"></i><span id="liveT">Lade Daten…</span></p>
+<p class="sub" id="sub"></p>
+</header>
+<section>
+<h2>Rangliste</h2>
+<div class="rank" id="rank"></div>
+<p class="away" id="away"></p>
+</section>
+<section>
+<h2>Schichtplan, Stunde für Stunde</h2>
+<div class="legend">
+<span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
+</div>
+<div class="proof"><img class="shot" id="shot" alt="Beweisfoto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><button type="button" id="rnd">Zufälliges Foto</button></div></div>
+<div class="scroll"><div class="grid" id="grid"></div></div>
+</section>
+<section>
+<h2>So gemessen</h2>
+<div class="note" id="note"></div>
+</section>
+</main>
+<script>
+const P=[["Nooreax","N","--n"],["Veto","V","--v"],["Dima","D","--d"]];
+const WHO={N:"Nooreax",V:"Veto",D:"Dima"},wd=["So","Mo","Di","Mi","Do","Fr","Sa"];
+const fmt=n=>n.toLocaleString("de-DE",{maximumFractionDigits:1});
+const f2=n=>String(n).padStart(2,"0");
+const bf=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+function parts(t){const o={};for(const p of bf.formatToParts(new Date(t*1000)))o[p.type]=p.value;return {day:`${o.year}-${o.month}-${o.day}`,h:+o.hour,m:+o.minute}}
+let S=[],sel=null;
+function build(){
+ const days={},tot={N:0,V:0,D:0,"-":0};
+ for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,img:null})));
+  const c=d[q.h];c[s.p]++;c.n++;tot[s.p]++;if(s.img)c.img=s;}
+ return {days,tot};
+}
+function render(){
+ const {days,tot}=build(),all=Object.keys(days).sort();
+ const hrs=k=>tot[k]*5/60,total=(tot.N+tot.V+tot.D+tot["-"])*5/60;
+ const last=S[S.length-1],age=last?(Date.now()/1000-last.t)/60:1e9;
+ document.getElementById("live").className="live"+(age<20?" on":"");
+ document.getElementById("liveT").textContent=age<20?`LIVE · zuletzt gemessen vor ${Math.max(0,Math.round(age))} Min`:`Keine aktuelle Messung (zuletzt vor ${age>1440?Math.round(age/1440)+" Tagen":Math.round(age/60)+" Std"}). Stream offline oder Pause.`;
+ document.getElementById("sub").textContent=`${fmt(total)} Stunden Stream ausgewertet, seit ${all[0]?all[0].split("-").reverse().join("."):""}. Gezählt wird, wer in der Facecam sitzt.`;
+ const ranked=P.slice().sort((a,b)=>tot[b[1]]-tot[a[1]]);
+ document.getElementById("rank").innerHTML=ranked.map((p,i)=>{const h=hrs(p[1]),pct=total?h/total*100:0;
+  return `<div class="row"><span class="no">${i+1}</span><span class="name">${p[0]}</span><span class="hrs">${fmt(h)}<small> h</small></span><div class="bar"><i style="width:${pct}%;background:var(${p[2]})"></i></div><span class="meta">${fmt(pct)} % der Zeit · ${fmt(h/24)} volle Tage</span></div>`}).join("");
+ document.getElementById("away").textContent="Niemand in der Cam oder nicht erkennbar: "+fmt(hrs("-"))+" Stunden.";
+ let g="<span></span>";for(let h=0;h<24;h++)g+=`<span class="h">${h%6==0?h:""}</span>`;
+ if(all.length){const end=new Date(all[all.length-1]+"T12:00:00");
+  for(let d=new Date(all[0]+"T12:00:00");d<=end;d.setDate(d.getDate()+1)){
+   const day=`${d.getFullYear()}-${f2(d.getMonth()+1)}-${f2(d.getDate())}`,row=days[day];
+   g+=`<span class="d">${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}.</span>`;
+   for(let h=0;h<24;h++){const c=row&&row[h];let k="X",t="keine Messung";
+    if(c&&c.n){const top=["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a);k=top==="-"?"A":top;t=WHO[top]||"niemand in der Cam"}
+    g+=`<span class="c k-${k}${c&&c.img?" ph":""}" data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
+ document.getElementById("grid").innerHTML=g;window._days=days;
+ if(sel)show(sel[0],sel[1]);else rand();
+}
+function show(day,h){const c=window._days[day]&&window._days[day][h];if(!c||!c.img)return;sel=[day,h];
+ const s=c.img,d=new Date(day+"T12:00:00");
+ document.getElementById("shot").src=`proof/${day}/${f2(h)}.jpg`;
+ document.getElementById("capT").textContent=WHO[s.p]||"Niemand in der Cam";
+ document.getElementById("capS").textContent=`${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}., ${f2(h)}:${f2(s.q.m)} Uhr`;
+ document.querySelectorAll(".c.sel").forEach(e=>e.classList.remove("sel"));
+ const el=document.querySelector(`.c[data-day="${day}"][data-h="${h}"]`);if(el)el.classList.add("sel");}
+function rand(){const a=[...document.querySelectorAll(".c.ph")];if(!a.length)return;const e=a[Math.floor(Math.random()*a.length)];show(e.dataset.day,+e.dataset.h)}
+document.getElementById("grid").addEventListener("click",e=>{const t=e.target.closest(".c");if(t)show(t.dataset.day,+t.dataset.h)});
+document.getElementById("rnd").addEventListener("click",()=>{sel=null;rand()});
+document.getElementById("note").innerHTML=[
+"Alle 5 Minuten wird ein Bild vom Stream genommen, im ganzen Bild nach Gesichtern gesucht und per Gesichtserkennung einer Person zugeordnet. Jedes Bild zählt 5 Minuten. Die Zeit bis zum 15.11. wurde aus den Mitschnitten (VODs) berechnet, danach misst ein kleiner Server live. Zwei Stichproben von je 30 Bildern ergaben 29 und 30 richtige Treffer. Rechne also mit kleinen Abweichungen.",
+"Es fehlen etwa 46 Stunden (24.10. mittags bis 26.10. früh), weil es dafür auf Twitch keinen Mitschnitt mehr gibt. Sie sind im Plan schraffiert und nicht in den Stunden enthalten.",
+"Tippe auf ein Kästchen mit Rahmen, um ein Foto aus dieser Stunde zu sehen. Ein Kästchen zeigt, wer in dieser Stunde am häufigsten in der Cam saß. Zeiten in Berlin."].map(t=>`<p>${t}</p>`).join("");
+async function load(){try{const r=await fetch("samples.jsonl?"+Math.floor(Date.now()/60000),{cache:"no-store"});
+ S=(await r.text()).split("\n").filter(Boolean).map(l=>JSON.parse(l));S.sort((a,b)=>a.t-b.t);render()}catch(e){document.getElementById("liveT").textContent="Daten konnten nicht geladen werden."}}
+load();setInterval(load,60000);
+</script>
+</body></html>
