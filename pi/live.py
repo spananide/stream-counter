@@ -55,7 +55,7 @@ def grab_frame(ffmpeg, url):
                 pass
 
 
-def recognize_face(frame, detector, recognizer, model, min_w=40, min_p=0.8):
+def recognize_face(frame, detector, recognizer, model, min_w=40, min_p=0.7):
     # returns (letters of everyone in the cam, best probability, face of the main person)
     h, w = frame.shape[:2]
     detector.setInputSize((w, h))
