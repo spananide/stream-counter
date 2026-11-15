@@ -55,8 +55,9 @@ def grab_frame(ffmpeg, url):
                 pass
 
 
-def recognize_face(frame, detector, recognizer, model, min_w=40, min_p=0.7):
+def recognize_face(frame, detector, recognizer, model, min_w=42, min_p=0.7):
     # returns (letters of everyone in the cam, best probability, face of the main person)
+    # min_w: wall posters are ~32 px wide at 1080p, real faces start around 45 px
     h, w = frame.shape[:2]
     detector.setInputSize((w, h))
     _, faces = detector.detect(frame)
@@ -74,8 +75,11 @@ def recognize_face(frame, detector, recognizer, model, min_w=40, min_p=0.7):
         return "-", -1.0, None
     main = max(seen, key=lambda x: x[0])
     letters = {main[2]}
-    for x in seen:  # 2nd person: similar size and clearly beside the main face
-        if x[0] >= 0.6 * main[0] and ((x[3] - main[3]) ** 2 + (x[4] - main[4]) ** 2) ** 0.5 >= 0.9 * main[0]:
+    for x in seen:  # 2nd person: not tiny, sure about the face and the person, clearly beside the main face
+        if x is main:
+            continue
+        far = ((x[3] - main[3]) ** 2 + (x[4] - main[4]) ** 2) ** 0.5 >= 0.9 * main[0]
+        if x[0] >= 0.38 * main[0] and x[1] >= 0.8 and float(x[5][14]) >= 0.85 and far:
             letters.add(x[2])
     return "".join(sorted(letters)), main[1], main[5]
 
