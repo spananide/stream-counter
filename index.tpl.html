@@ -40,8 +40,8 @@ function parts(t){const o={};for(const p of bf.formatToParts(new Date(t*1000)))o
 let S=[],sel=null;
 function build(){
  const days={},tot={N:0,V:0,D:0,"-":0,n:0};
- for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,img:null})));
-  const c=d[q.h],L=s.p==="-"?[]:s.p.split("");c.n++;tot.n++;if(!L.length){c["-"]++;tot["-"]++}for(const l of L){c[l]++;tot[l]++}if(s.img)c.img=s;}
+ for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,imgs:null})));
+  const c=d[q.h],L=s.p==="-"?[]:s.p.split("");c.n++;tot.n++;if(!L.length){c["-"]++;tot["-"]++}for(const l of L){c[l]++;tot[l]++}if(s.img)(c.imgs=c.imgs||[]).push(s);}
  return {days,tot};
 }
 function render(){
@@ -62,16 +62,18 @@ function render(){
    g+=`<span class="d">${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}.</span>`;
    for(let h=0;h<24;h++){const c=row&&row[h];let k="X",t="keine Messung";
     let st="";
-    if(c&&c.n){let pr=["N","V","D"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a)];
+    if(c&&c.n){let pr=["N","V","D"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a)];c.pr=pr;
      t=pr.map(l=>WHO[l]||"niemand in der Cam").join(" + ");
      if(pr.length==1)k=pr[0]==="-"?"A":pr[0];else{k="M";const col={N:"--n",V:"--v",D:"--d"},w=100/pr.length;st=` style="background:linear-gradient(90deg,${pr.map((l,i)=>`var(${col[l]}) ${i*w}% ${(i+1)*w}%`).join(",")})"`}}
-    g+=`<span class="c k-${k}${c&&c.img?" ph":""}"${st} data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
+    g+=`<span class="c k-${k}${c&&c.imgs?" ph":""}"${st} data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
  document.getElementById("grid").innerHTML=g;window._days=days;
  if(sel)show(sel[0],sel[1]);else rand();
 }
-function show(day,h){const c=window._days[day]&&window._days[day][h];if(!c||!c.img)return;sel=[day,h];
- const s=c.img,d=new Date(day+"T12:00:00");
- document.getElementById("shot").src=`proof/${day}/${f2(h)}.jpg`;
+function pick(c){const want=new Set(c.pr||[]),lt=s=>s.p==="-"?["-"]:s.p.split("");let best=null,bs=-1;
+ for(const s of c.imgs){const L=lt(s),inter=L.filter(l=>want.has(l)).length,sc=inter*10-Math.abs(L.length-want.size);if(sc>bs){bs=sc;best=s}}return best}
+function show(day,h){const c=window._days[day]&&window._days[day][h];if(!c||!c.imgs)return;sel=[day,h];
+ const s=pick(c),d=new Date(day+"T12:00:00"),sl=Math.floor(s.q.m/20);
+ document.getElementById("shot").src=`proof/${day}/${f2(h)}${s.img===2?"-"+sl:""}.jpg`;
  document.getElementById("capT").textContent=s.p==="-"?"Niemand in der Cam":s.p.split("").map(l=>WHO[l]).join(" + ");
  document.getElementById("capS").textContent=`${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}., ${f2(h)}:${f2(s.q.m)} Uhr`;
  document.querySelectorAll(".c.sel").forEach(e=>e.classList.remove("sel"));

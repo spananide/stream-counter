@@ -93,7 +93,8 @@ def save_proof_and_sample(repo, frame, person, best_sim, best_face):
     now_berlin = datetime.now(ZoneInfo("Europe/Berlin"))
     day, hh = now_berlin.strftime("%Y-%m-%d"), now_berlin.strftime("%H")
     proof_dir = os.path.join(repo, "proof", day)
-    proof_path = os.path.join(proof_dir, f"{hh}.jpg")
+    slot = now_berlin.minute // 20  # up to 3 photos per hour so the page can show one that matches the hour
+    proof_path = os.path.join(proof_dir, f"{hh}.jpg" if slot == 0 else f"{hh}-{slot}.jpg")
     saved_photo = False
     if not os.path.exists(proof_path):
         if person != "-" and best_face is not None:
@@ -113,7 +114,7 @@ def save_proof_and_sample(repo, frame, person, best_sim, best_face):
     samples_path = os.path.join(repo, "samples.jsonl")
     entry = {"t": int(time.time()), "p": person}
     if saved_photo:
-        entry["img"] = 1
+        entry["img"] = 1 if slot == 0 else 2
     with open(samples_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
         f.flush()
