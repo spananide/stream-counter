@@ -4,6 +4,7 @@ services:
       context: ..
       dockerfile: pi/Dockerfile
     restart: unless-stopped
+    network_mode: host  # Kuma listens on 127.0.0.1:3001 only
     mem_limit: 600m
     volumes:
       - ..:/repo
