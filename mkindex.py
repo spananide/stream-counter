@@ -7,4 +7,5 @@ css = css.replace('*{box-sizing:border-box}', '*{box-sizing:border-box}html{back
   '.live{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin:0 0 14px}.dot{width:9px;height:9px;border-radius:50%;background:var(--away)}'
   '.on .dot{background:#2fbf71;animation:p 2s infinite}@keyframes p{0%{box-shadow:0 0 0 0 #2fbf7188}70%{box-shadow:0 0 0 8px transparent}}'
   '@media (prefers-reduced-motion:reduce){.on .dot{animation:none}}.grid .c.ph{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}')
+css = css.replace('</style>', '.ctl,.chips{display:flex;flex-wrap:wrap;gap:8px}.chips{gap:6px}.chips button{padding:4px 9px!important;font-size:12px!important}.chips button.on{background:var(--fg)!important;color:var(--bg)!important;border-color:var(--fg)!important}.cap{gap:8px}</style>')
 open('index.html', 'w', encoding='utf8').write(open('index.tpl.html', encoding='utf8').read().replace('__CSS__', css))

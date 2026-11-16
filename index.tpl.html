@@ -22,7 +22,7 @@ __CSS__
 <div class="legend">
 <span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw" style="background:linear-gradient(90deg,var(--n) 50%,var(--d) 50%)"></i>zwei zusammen</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
 </div>
-<div class="proof"><img class="shot" id="shot" alt="Beweisfoto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><button type="button" id="rnd">Zufälliges Foto</button></div></div>
+<div class="proof"><img class="shot" id="shot" alt="Foto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><div class="ctl"><button type="button" id="bLatest">Neuestes</button><button type="button" id="bRnd">Zufällig</button><button type="button" id="bHour" hidden>Nochmal aus dieser Stunde</button></div><div class="chips" id="chips" role="group" aria-label="Zufällig von"><button type="button" data-f="" class="on">Alle</button><button type="button" data-f="N">Nooreax</button><button type="button" data-f="V">Veto</button><button type="button" data-f="D">Dima</button><button type="button" data-f="-">Niemand</button></div></div></div>
 <div class="scroll"><div class="grid" id="grid"></div></div>
 </section>
 <section>
@@ -37,11 +37,11 @@ const fmt=n=>n.toLocaleString("de-DE",{maximumFractionDigits:1});
 const f2=n=>String(n).padStart(2,"0");
 const bf=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
 function parts(t){const o={};for(const p of bf.formatToParts(new Date(t*1000)))o[p.type]=p.value;return {day:`${o.year}-${o.month}-${o.day}`,h:+o.hour,m:+o.minute}}
-let S=[],sel=null;
+let S=[],mode="latest",filt="",hourSel=null,cur=null,tries=0;
 function build(){
  const days={},tot={N:0,V:0,D:0,"-":0,n:0};
- for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,imgs:null})));
-  const c=d[q.h],L=s.p==="-"?[]:s.p.split("");c.n++;tot.n++;if(!L.length){c["-"]++;tot["-"]++}for(const l of L){c[l]++;tot[l]++}if(s.img)(c.imgs=c.imgs||[]).push(s);}
+ for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,list:null})));
+  const c=d[q.h],L=s.p==="-"?[]:s.p.split("");c.n++;tot.n++;if(!L.length){c["-"]++;tot["-"]++}for(const l of L){c[l]++;tot[l]++}(c.list=c.list||[]).push(s);}
  return {days,tot};
 }
 function render(){
@@ -65,26 +65,35 @@ function render(){
     if(c&&c.n){let pr=["N","V","D"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a)];c.pr=pr;
      t=pr.map(l=>WHO[l]||"niemand in der Cam").join(" + ");
      if(pr.length==1)k=pr[0]==="-"?"A":pr[0];else{k="M";const col={N:"--n",V:"--v",D:"--d"},w=100/pr.length;st=` style="background:linear-gradient(90deg,${pr.map((l,i)=>`var(${col[l]}) ${i*w}% ${(i+1)*w}%`).join(",")})"`}}
-    g+=`<span class="c k-${k}${c&&c.imgs?" ph":""}"${st} data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
+    g+=`<span class="c k-${k}${""}"${st} data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
  document.getElementById("grid").innerHTML=g;window._days=days;
- if(sel)show(sel[0],sel[1]);else rand();
+ if(mode==="latest")showSample(S[S.length-1]);else mark();
 }
-function pick(c){const want=new Set(c.pr||[]),lt=s=>s.p==="-"?["-"]:s.p.split("");let best=null,bs=-1;
- for(const s of c.imgs){const L=lt(s),inter=L.filter(l=>want.has(l)).length,sc=inter*10-Math.abs(L.length-want.size);if(sc>bs){bs=sc;best=s}}return best}
-function show(day,h){const c=window._days[day]&&window._days[day][h];if(!c||!c.imgs)return;sel=[day,h];
- const s=pick(c),d=new Date(day+"T12:00:00"),sl=Math.floor(s.q.m/20);
- document.getElementById("shot").src=`proof/${day}/${f2(h)}${s.img===2?"-"+sl:""}.jpg`;
- document.getElementById("capT").textContent=s.p==="-"?"Niemand in der Cam":s.p.split("").map(l=>WHO[l]).join(" + ");
- document.getElementById("capS").textContent=`${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}., ${f2(h)}:${f2(s.q.m)} Uhr`;
- document.querySelectorAll(".c.sel").forEach(e=>e.classList.remove("sel"));
- const el=document.querySelector(`.c[data-day="${day}"][data-h="${h}"]`);if(el)el.classList.add("sel");}
-function rand(){const a=[...document.querySelectorAll(".c.ph")];if(!a.length)return;const e=a[Math.floor(Math.random()*a.length)];show(e.dataset.day,+e.dataset.h)}
-document.getElementById("grid").addEventListener("click",e=>{const t=e.target.closest(".c");if(t)show(t.dataset.day,+t.dataset.h)});
-document.getElementById("rnd").addEventListener("click",()=>{sel=null;rand()});
+const $=id=>document.getElementById(id),ph=x=>`ph/${x.q.day}/${x.t}.jpg`;
+const has=(x,f)=>f===""||(f==="-"?x.p==="-":x.p.includes(f));
+const names=x=>x.p==="-"?"Niemand in der Cam":x.p.split("").map(l=>WHO[l]).join(" + ");
+function mark(){document.querySelectorAll(".c.sel").forEach(e=>e.classList.remove("sel"));if(!cur)return;
+ const el=document.querySelector(`.c[data-day="${cur.q.day}"][data-h="${cur.q.h}"]`);if(el)el.classList.add("sel")}
+function showSample(x){if(!x)return;cur=x;const im=$("shot");
+ im.onerror=()=>{if(tries++>40)return;if(mode==="latest")showSample(S[S.indexOf(x)-1]);else if(mode==="hour")randomHour(hourSel[0],hourSel[1]);else randomAny()};
+ im.onload=()=>{tries=0};im.src=ph(x);
+ const d=new Date(x.q.day+"T12:00:00");
+ $("capT").textContent=names(x);
+ $("capS").textContent=(mode==="latest"?"Neuestes Foto · ":mode==="hour"?"Aus dieser Stunde · ":"Zufällig · ")+`${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}., ${f2(x.q.h)}:${f2(x.q.m)} Uhr`;
+ mark()}
+function latest(){mode="latest";hourSel=null;$("bHour").hidden=true;showSample(S[S.length-1])}
+function randomAny(){mode="random";hourSel=null;$("bHour").hidden=true;const a=S.filter(x=>has(x,filt));if(a.length)showSample(a[Math.floor(Math.random()*a.length)])}
+function randomHour(day,h){const c=window._days[day]&&window._days[day][h];if(!c||!c.list)return;mode="hour";hourSel=[day,h];$("bHour").hidden=false;
+ let a=c.list.filter(x=>has(x,filt));if(!a.length)a=c.list;showSample(a[Math.floor(Math.random()*a.length)])}
+$("grid").addEventListener("click",e=>{const t=e.target.closest(".c");if(t)randomHour(t.dataset.day,+t.dataset.h)});
+$("bLatest").addEventListener("click",latest);$("bRnd").addEventListener("click",randomAny);
+$("bHour").addEventListener("click",()=>hourSel&&randomHour(hourSel[0],hourSel[1]));
+$("chips").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;filt=b.dataset.f;
+ document.querySelectorAll("#chips button").forEach(x=>x.classList.toggle("on",x===b));if(mode==="hour")randomHour(hourSel[0],hourSel[1]);else randomAny()});
 document.getElementById("note").innerHTML=[
 "Alle 5 Minuten wird ein Bild vom Stream genommen, im ganzen Bild nach Gesichtern gesucht und per Gesichtserkennung einer Person zugeordnet. Jedes Bild zählt 5 Minuten, für jede Person, die in der Cam sitzt. Deshalb ergeben die Stunden der drei zusammen mehr als die Streamzeit. Die Zeit bis zum 15.11. wurde aus den Mitschnitten (VODs) berechnet, danach misst ein kleiner Server live. Zwei Stichproben von je 30 Bildern ergaben 29 und 30 richtige Treffer. Rechne also mit kleinen Abweichungen.",
 "Es fehlen etwa 46 Stunden (24.10. mittags bis 26.10. früh), weil es dafür auf Twitch keinen Mitschnitt mehr gibt. Sie sind im Plan schraffiert und nicht in den Stunden enthalten.",
-"Tippe auf ein Kästchen mit Rahmen, um ein Foto aus dieser Stunde zu sehen. Ein Kästchen zeigt, wer in dieser Stunde am häufigsten in der Cam saß. Zeiten in Berlin."].map(t=>`<p>${t}</p>`).join("");
+"Oben siehst du das neueste Foto. Tippe auf ein Kästchen für ein zufälliges Foto aus dieser Stunde, oder wähle mit den Knöpfen ein zufälliges Foto aus allen Messungen, auch nur von einer Person. Ein Kästchen zeigt, wer in dieser Stunde am häufigsten in der Cam saß. Zeiten in Berlin."].map(t=>`<p>${t}</p>`).join("");
 async function load(){try{const r=await fetch("samples.jsonl?"+Math.floor(Date.now()/60000),{cache:"no-store"});
  S=(await r.text()).split("\n").filter(Boolean).map(l=>JSON.parse(l));S.sort((a,b)=>a.t-b.t);render()}catch(e){document.getElementById("liveT").textContent="Daten konnten nicht geladen werden."}}
 load();setInterval(load,60000);

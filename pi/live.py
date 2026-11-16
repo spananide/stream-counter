@@ -91,37 +91,29 @@ def _corner(frame):
 
 def save_proof_and_sample(repo, frame, person, best_sim, best_face):
     now_berlin = datetime.now(ZoneInfo("Europe/Berlin"))
-    day, hh = now_berlin.strftime("%Y-%m-%d"), now_berlin.strftime("%H")
-    proof_dir = os.path.join(repo, "proof", day)
-    slot = now_berlin.minute // 20  # up to 3 photos per hour so the page can show one that matches the hour
-    proof_path = os.path.join(proof_dir, f"{hh}.jpg" if slot == 0 else f"{hh}-{slot}.jpg")
-    saved_photo = False
-    if not os.path.exists(proof_path):
-        if person != "-" and best_face is not None:
-            fx, fy, fw, fh = best_face[0:4]
-            cx, cy = fx + fw / 2.0, fy + fh / 2.0
-            nw, nh = fw * 2.2, fh * 2.4
-            h, w = frame.shape[:2]
-            x1, y1 = max(0, int(round(cx - nw / 2.0))), max(0, int(round(cy - nh / 2.0)))
-            x2, y2 = min(w, int(round(cx + nw / 2.0))), min(h, int(round(cy + nh / 2.0)))
-            shot = cv2.resize(frame[y1:y2, x1:x2], (186, 160)) if (x2 > x1 and y2 > y1) else _corner(frame)
-        else:
-            shot = _corner(frame)
-        os.makedirs(proof_dir, exist_ok=True)
-        cv2.imwrite(proof_path, shot, [int(cv2.IMWRITE_JPEG_QUALITY), 72])
-        saved_photo = True
+    t = int(time.time())
+    # one small photo per measurement: ph/<berlin day>/<t>.jpg, face-centred when someone was found
+    if person != "-" and best_face is not None:
+        fx, fy, fw, fh = best_face[0:4]
+        cx, cy = fx + fw / 2.0, fy + fh / 2.0
+        h, w = frame.shape[:2]
+        x1, y1 = max(0, int(round(cx - 1.1 * fw))), max(0, int(round(cy - 1.2 * fh)))
+        x2, y2 = min(w, int(round(cx + 1.1 * fw))), min(h, int(round(cy + 1.2 * fh)))
+        shot = cv2.resize(frame[y1:y2, x1:x2], (186, 160)) if (x2 > x1 and y2 > y1) else _corner(frame)
+    else:
+        shot = _corner(frame)
+    photo_dir = os.path.join(repo, "ph", now_berlin.strftime("%Y-%m-%d"))
+    os.makedirs(photo_dir, exist_ok=True)
+    cv2.imwrite(os.path.join(photo_dir, f"{t}.jpg"), shot, [int(cv2.IMWRITE_JPEG_QUALITY), 65])
 
     samples_path = os.path.join(repo, "samples.jsonl")
-    entry = {"t": int(time.time()), "p": person}
-    if saved_photo:
-        entry["img"] = 1 if slot == 0 else 2
     with open(samples_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry) + "\n")
+        f.write(json.dumps({"t": t, "p": person}) + "\n")
         f.flush()
 
     sim_str = f"{best_sim:.4f}" if best_sim >= 0 else "0.0000"
-    print(f"{now_berlin.isoformat()} {person} sim={sim_str} photo={1 if saved_photo else 0}", flush=True)
-    return saved_photo
+    print(f"{now_berlin.isoformat()} {person} sim={sim_str}", flush=True)
+    return True
 
 
 def measure(repo, stream_url, ytdlp, ffmpeg, detector, recognizer, model):
@@ -153,7 +145,7 @@ def ping_kuma(url):
 
 def git_sync(repo):
     try:
-        subprocess.run(["git", "add", "samples.jsonl", "proof"], cwd=repo, check=True)
+        subprocess.run(["git", "add", "samples.jsonl", "proof", "ph"], cwd=repo, check=True)
         if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo).returncode != 0:
             iso_now = datetime.now(ZoneInfo("Europe/Berlin")).isoformat()
             subprocess.run(["git", "commit", "-m", f"Messung {iso_now}"], cwd=repo, check=True)
