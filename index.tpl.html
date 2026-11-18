@@ -20,9 +20,9 @@ __CSS__
 <section>
 <h2>Schichtplan, Stunde für Stunde</h2>
 <div class="legend">
-<span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw" style="background:linear-gradient(90deg,var(--n) 50%,var(--d) 50%)"></i>zwei zusammen</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
+<span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw k-U"></i>Urutox</span><span><i class="sw" style="background:linear-gradient(90deg,var(--n) 50%,var(--d) 50%)"></i>zwei zusammen</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
 </div>
-<div class="proof"><img class="shot" id="shot" alt="Foto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><div class="ctl"><button type="button" id="bLatest">Neuestes</button><button type="button" id="bRnd">Zufällig</button><button type="button" id="bHour" hidden>Nochmal aus dieser Stunde</button></div><div class="chips" id="chips" role="group" aria-label="Zufällig von"><button type="button" data-f="" class="on">Alle</button><button type="button" data-f="N">Nooreax</button><button type="button" data-f="V">Veto</button><button type="button" data-f="D">Dima</button><button type="button" data-f="-">Niemand</button></div></div></div>
+<div class="proof"><img class="shot" id="shot" alt="Foto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><div class="ctl"><button type="button" id="bLatest">Neuestes</button><button type="button" id="bRnd">Zufällig</button><button type="button" id="bHour" hidden>Nochmal aus dieser Stunde</button></div><div class="chips" id="chips" role="group" aria-label="Zufällig von"><button type="button" data-f="" class="on">Alle</button><button type="button" data-f="N">Nooreax</button><button type="button" data-f="V">Veto</button><button type="button" data-f="D">Dima</button><button type="button" data-f="U">Urutox</button><button type="button" data-f="-">Niemand</button></div></div></div>
 <div class="scroll"><div class="grid" id="grid"></div></div>
 </section>
 <section>
@@ -31,16 +31,16 @@ __CSS__
 </section>
 </main>
 <script>
-const P=[["Nooreax","N","--n"],["Veto","V","--v"],["Dima","D","--d"]];
-const WHO={N:"Nooreax",V:"Veto",D:"Dima"},wd=["So","Mo","Di","Mi","Do","Fr","Sa"];
+const P=[["Nooreax","N","--n"],["Veto","V","--v"],["Dima","D","--d"],["Urutox","U","--u"]];
+const WHO={N:"Nooreax",V:"Veto",D:"Dima",U:"Urutox"},wd=["So","Mo","Di","Mi","Do","Fr","Sa"];
 const fmt=n=>n.toLocaleString("de-DE",{maximumFractionDigits:1});
 const f2=n=>String(n).padStart(2,"0");
 const bf=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
 function parts(t){const o={};for(const p of bf.formatToParts(new Date(t*1000)))o[p.type]=p.value;return {day:`${o.year}-${o.month}-${o.day}`,h:+o.hour,m:+o.minute}}
 let S=[],mode="latest",filt="",hourSel=null,cur=null,tries=0;
 function build(){
- const days={},tot={N:0,V:0,D:0,"-":0,n:0};
- for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,list:null})));
+ const days={},tot={N:0,V:0,D:0,U:0,"-":0,n:0};
+ for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,U:0,"-":0,n:0,list:null})));
   const c=d[q.h],L=s.p==="-"?[]:s.p.split("");c.n++;tot.n++;if(!L.length){c["-"]++;tot["-"]++}for(const l of L){c[l]++;tot[l]++}(c.list=c.list||[]).push(s);}
  return {days,tot};
 }
@@ -62,9 +62,9 @@ function render(){
    g+=`<span class="d">${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}.</span>`;
    for(let h=0;h<24;h++){const c=row&&row[h];let k="X",t="keine Messung";
     let st="";
-    if(c&&c.n){let pr=["N","V","D"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a)];c.pr=pr;
+    if(c&&c.n){let pr=["N","V","D","U"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","U","-"].reduce((a,b)=>c[b]>c[a]?b:a)];c.pr=pr;
      t=pr.map(l=>WHO[l]||"niemand in der Cam").join(" + ");
-     if(pr.length==1)k=pr[0]==="-"?"A":pr[0];else{k="M";const col={N:"--n",V:"--v",D:"--d"},w=100/pr.length;st=` style="background:linear-gradient(90deg,${pr.map((l,i)=>`var(${col[l]}) ${i*w}% ${(i+1)*w}%`).join(",")})"`}}
+     if(pr.length==1)k=pr[0]==="-"?"A":pr[0];else{k="M";const col={N:"--n",V:"--v",D:"--d",U:"--u"},w=100/pr.length;st=` style="background:linear-gradient(90deg,${pr.map((l,i)=>`var(${col[l]}) ${i*w}% ${(i+1)*w}%`).join(",")})"`}}
     g+=`<span class="c k-${k}${""}"${st} data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
  document.getElementById("grid").innerHTML=g;window._days=days;
  if(mode==="latest")showSample(S[S.length-1]);else mark();

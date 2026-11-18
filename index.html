@@ -8,8 +8,8 @@
 :root{--bg:#f4f5f7;--panel:#fff;--fg:#14171c;--mute:#5d6672;--line:#d9dde3;
 --n:#d98a0f;--v:#0c93b3;--d:#d8456a;--away:#c3c9d2;--nodata:#eceef1;--nodata-line:#cfd4db;
 --display:"Bricolage Grotesque",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--panel:#161a21;--fg:#eef0f3;--mute:#9099a6;--line:#262c36;--n:#f2a93b;--v:#3fb8d6;--d:#ef6f8b;--away:#3a424e;--nodata:#12151b;--nodata-line:#262c36;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1116;--panel:#161a21;--fg:#eef0f3;--mute:#9099a6;--line:#262c36;--n:#f2a93b;--v:#3fb8d6;--d:#ef6f8b;--away:#3a424e;--nodata:#12151b;--nodata-line:#262c36;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--panel:#161a21;--fg:#eef0f3;--mute:#9099a6;--line:#262c36;--n:#f2a93b;--v:#3fb8d6;--d:#ef6f8b;--u:#9d82f2;--away:#3a424e;--nodata:#12151b;--nodata-line:#262c36;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1116;--panel:#161a21;--fg:#eef0f3;--mute:#9099a6;--line:#262c36;--n:#f2a93b;--v:#3fb8d6;--d:#ef6f8b;--u:#9d82f2;--away:#3a424e;--nodata:#12151b;--nodata-line:#262c36;color-scheme:dark}
 *{box-sizing:border-box}html{background:var(--bg)}body{margin:0}.live{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin:0 0 14px}.dot{width:9px;height:9px;border-radius:50%;background:var(--away)}.on .dot{background:#2fbf71;animation:p 2s infinite}@keyframes p{0%{box-shadow:0 0 0 0 #2fbf7188}70%{box-shadow:0 0 0 8px transparent}}@media (prefers-reduced-motion:reduce){.on .dot{animation:none}}.grid .c.ph{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
 body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--mono);padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 main>*{min-width:0}
@@ -37,7 +37,7 @@ h2{font-size:22px;font-weight:800}
 .grid .h{font-size:11px;color:var(--mute);text-align:left;height:16px;line-height:16px}
 .grid .d{font-size:12px;color:var(--mute);line-height:16px;white-space:nowrap}
 .grid .c{height:16px;border-radius:2px}
-.k-N{background:var(--n)}.k-V{background:var(--v)}.k-D{background:var(--d)}.k-A{background:var(--away)}
+.k-N{background:var(--n)}.k-V{background:var(--v)}.k-D{background:var(--d)}.k-U{background:var(--u)}.k-A{background:var(--away)}
 .k-X{background:repeating-linear-gradient(135deg,var(--nodata) 0 3px,var(--nodata-line) 3px 4px)}
 .proof{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:16px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:12px}
 .shot{flex:none;width:186px;height:160px;border-radius:3px;background:var(--nodata);object-fit:cover;display:block}
@@ -66,9 +66,9 @@ h2{font-size:22px;font-weight:800}
 <section>
 <h2>Schichtplan, Stunde für Stunde</h2>
 <div class="legend">
-<span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw" style="background:linear-gradient(90deg,var(--n) 50%,var(--d) 50%)"></i>zwei zusammen</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
+<span><i class="sw k-N"></i>Nooreax</span><span><i class="sw k-V"></i>Veto</span><span><i class="sw k-D"></i>Dima</span><span><i class="sw k-U"></i>Urutox</span><span><i class="sw" style="background:linear-gradient(90deg,var(--n) 50%,var(--d) 50%)"></i>zwei zusammen</span><span><i class="sw k-A"></i>niemand in der Cam</span><span><i class="sw k-X"></i>keine Messung</span>
 </div>
-<div class="proof"><img class="shot" id="shot" alt="Foto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><div class="ctl"><button type="button" id="bLatest">Neuestes</button><button type="button" id="bRnd">Zufällig</button><button type="button" id="bHour" hidden>Nochmal aus dieser Stunde</button></div><div class="chips" id="chips" role="group" aria-label="Zufällig von"><button type="button" data-f="" class="on">Alle</button><button type="button" data-f="N">Nooreax</button><button type="button" data-f="V">Veto</button><button type="button" data-f="D">Dima</button><button type="button" data-f="-">Niemand</button></div></div></div>
+<div class="proof"><img class="shot" id="shot" alt="Foto aus der Facecam" width="186" height="160"><div class="cap"><b id="capT"></b><span id="capS"></span><div class="ctl"><button type="button" id="bLatest">Neuestes</button><button type="button" id="bRnd">Zufällig</button><button type="button" id="bHour" hidden>Nochmal aus dieser Stunde</button></div><div class="chips" id="chips" role="group" aria-label="Zufällig von"><button type="button" data-f="" class="on">Alle</button><button type="button" data-f="N">Nooreax</button><button type="button" data-f="V">Veto</button><button type="button" data-f="D">Dima</button><button type="button" data-f="U">Urutox</button><button type="button" data-f="-">Niemand</button></div></div></div>
 <div class="scroll"><div class="grid" id="grid"></div></div>
 </section>
 <section>
@@ -77,16 +77,16 @@ h2{font-size:22px;font-weight:800}
 </section>
 </main>
 <script>
-const P=[["Nooreax","N","--n"],["Veto","V","--v"],["Dima","D","--d"]];
-const WHO={N:"Nooreax",V:"Veto",D:"Dima"},wd=["So","Mo","Di","Mi","Do","Fr","Sa"];
+const P=[["Nooreax","N","--n"],["Veto","V","--v"],["Dima","D","--d"],["Urutox","U","--u"]];
+const WHO={N:"Nooreax",V:"Veto",D:"Dima",U:"Urutox"},wd=["So","Mo","Di","Mi","Do","Fr","Sa"];
 const fmt=n=>n.toLocaleString("de-DE",{maximumFractionDigits:1});
 const f2=n=>String(n).padStart(2,"0");
 const bf=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
 function parts(t){const o={};for(const p of bf.formatToParts(new Date(t*1000)))o[p.type]=p.value;return {day:`${o.year}-${o.month}-${o.day}`,h:+o.hour,m:+o.minute}}
 let S=[],mode="latest",filt="",hourSel=null,cur=null,tries=0;
 function build(){
- const days={},tot={N:0,V:0,D:0,"-":0,n:0};
- for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,"-":0,n:0,list:null})));
+ const days={},tot={N:0,V:0,D:0,U:0,"-":0,n:0};
+ for(const s of S){const q=parts(s.t);s.q=q;const d=days[q.day]||(days[q.day]=Array.from({length:24},()=>({N:0,V:0,D:0,U:0,"-":0,n:0,list:null})));
   const c=d[q.h],L=s.p==="-"?[]:s.p.split("");c.n++;tot.n++;if(!L.length){c["-"]++;tot["-"]++}for(const l of L){c[l]++;tot[l]++}(c.list=c.list||[]).push(s);}
  return {days,tot};
 }
@@ -108,9 +108,9 @@ function render(){
    g+=`<span class="d">${wd[d.getDay()]} ${f2(d.getDate())}.${f2(d.getMonth()+1)}.</span>`;
    for(let h=0;h<24;h++){const c=row&&row[h];let k="X",t="keine Messung";
     let st="";
-    if(c&&c.n){let pr=["N","V","D"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","-"].reduce((a,b)=>c[b]>c[a]?b:a)];c.pr=pr;
+    if(c&&c.n){let pr=["N","V","D","U"].filter(l=>c[l]>=c.n/3);if(!pr.length)pr=[["N","V","D","U","-"].reduce((a,b)=>c[b]>c[a]?b:a)];c.pr=pr;
      t=pr.map(l=>WHO[l]||"niemand in der Cam").join(" + ");
-     if(pr.length==1)k=pr[0]==="-"?"A":pr[0];else{k="M";const col={N:"--n",V:"--v",D:"--d"},w=100/pr.length;st=` style="background:linear-gradient(90deg,${pr.map((l,i)=>`var(${col[l]}) ${i*w}% ${(i+1)*w}%`).join(",")})"`}}
+     if(pr.length==1)k=pr[0]==="-"?"A":pr[0];else{k="M";const col={N:"--n",V:"--v",D:"--d",U:"--u"},w=100/pr.length;st=` style="background:linear-gradient(90deg,${pr.map((l,i)=>`var(${col[l]}) ${i*w}% ${(i+1)*w}%`).join(",")})"`}}
     g+=`<span class="c k-${k}${""}"${st} data-day="${day}" data-h="${h}" title="${day}, ${h}:00 Uhr: ${t}"></span>`}}}
  document.getElementById("grid").innerHTML=g;window._days=days;
  if(mode==="latest")showSample(S[S.length-1]);else mark();
